@@ -1,0 +1,13 @@
+{
+  "network": "kairos",
+  "chainId": 1001,
+  "deployer": "0xE4CaDFBcCfa3aFC38969546832b553D5f28D70d2",
+  "feeToSetter": "0xE4CaDFBcCfa3aFC38969546832b553D5f28D70d2",
+  "WETH": "0x043c471bEe060e00A56CcD02c0Ca286808a5A436",
+  "wethMode": "canonical",
+  "UniswapV2Factory": "0x3E051C6E7a20d05236FE960BEB1c50a67802C60E",
+  "UniswapV2Router02": "0xd38Ff3fAEBe95944a27CE50869e1eF4654E64626",
+  "initCodeHash": "0xc97db88951ee829399b28cfec1e341f9601344c1fa8e4a9cba1c16f71b92c40a",
+  "rpc": "https://public-en-kairos.node.kaia.io",
+  "timestamp": "2026-09-02T13:01:23.753Z"
+}

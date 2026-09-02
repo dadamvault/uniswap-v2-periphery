@@ -1,0 +1,15 @@
+{
+  "name": "uniswap-v2-kaia-deploy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Deploy the fee-modified Uniswap V2 (core + periphery) to Kaia",
+  "scripts": {
+    "verify:hash": "node verify-init-code-hash.js",
+    "deploy": "node deploy.js",
+    "smoke": "node smoke-test.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.4"
+  }
+}
