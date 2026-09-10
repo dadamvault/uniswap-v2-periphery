@@ -1,9 +1,10 @@
 'use strict';
 // Deploy the fee-modified Uniswap V2 stack to Kaia.
 //
-//   UniswapV2Factory(feeToSetter)          <- Uniswap-v2-core/build
-//   UniswapV2Router02(factory, WETH)       <- Uniswap-v2-periphery/build
-//   [optional] WETH9()                     <- Uniswap-v2-periphery/build
+//   UniswapV2Factory(feeToSetter)          <- uniswap-v2-core/build
+//   UniswapV2Router02(factory, WETH)       <- uniswap-v2-periphery/build
+//   [optional] WETH9()                     <- uniswap-v2-periphery/build
+//   [optional] factory.setFeeTo(FEE_TO)    <- developer fee, when FEE_TO is set
 //
 // Deploys the EXACT bytecode from the `build/` artifacts (no recompilation),
 // so the Factory's CREATE2 pairs stay consistent with the init code hash
@@ -44,6 +45,10 @@ async function main() {
   const feeToSetter = (process.env.FEE_TO_SETTER || '').trim() || wallet.address;
   if (!isAddress(feeToSetter)) throw new Error(`FEE_TO_SETTER is not an address: ${feeToSetter}`);
 
+  // developer fee — Uniswap V2 protocol fee switch (1/6 of the 0.1% swap fee)
+  const feeTo = (process.env.FEE_TO || '').trim();
+  if (feeTo && !isAddress(feeTo)) throw new Error(`FEE_TO is not an address: ${feeTo}`);
+
   // resolve WETH
   const wethCfg = (process.env.WETH_ADDRESS || '').trim();
   let wethMode = 'canonical';
@@ -68,6 +73,7 @@ async function main() {
   console.log(` balance       : ${formatEther(bal)} KAIA`);
   console.log(` gasPrice      : ${overrides.gasPrice ? formatUnits(overrides.gasPrice, 'gwei') + ' gwei' : 'node default'}`);
   console.log(` feeToSetter   : ${feeToSetter}`);
+  console.log(` feeTo (dev)   : ${feeTo ? getAddress(feeTo) : '(unset — protocol fee stays OFF)'}`);
   console.log(` WETH (WKAIA)  : ${wethMode === 'deploy' ? '(deploy bundled WETH9)' : wethAddress + '  [' + wethMode + ']'}`);
   console.log(` initCodeHash  : 0x${initHash}  ✅ matches UniswapV2Library.sol`);
   console.log('────────────────────────────────────────────────────────');
@@ -107,12 +113,38 @@ async function main() {
   console.log(`router.WETH()    -> ${routerWeth}`);
   console.log(ok ? 'wiring OK ✅' : 'wiring MISMATCH ❌');
 
+  // --- 5. developer fee: turn on the protocol fee switch ------------------
+  // Uniswap V2 `_mintFee` routes 1/6 of the 0.1% swap fee to `feeTo` as LP
+  // tokens (carved from the LP share, not added on top). Only the feeToSetter
+  // can flip it, so this only runs when the deployer IS the feeToSetter.
+  let feeToStatus = feeTo ? 'requested' : 'unset';
+  if (feeTo) {
+    const onchainSetter = await factory.contract.feeToSetter();
+    if (getAddress(onchainSetter) !== getAddress(wallet.address)) {
+      feeToStatus = 'PENDING — call setFeeTo from the feeToSetter account';
+      console.log(`\n⚠ FEE_TO is set but the deployer is not the feeToSetter (${onchainSetter}).`);
+      console.log(`  From that account run: factory.setFeeTo(${getAddress(feeTo)})`);
+    } else {
+      console.log(`\nsetFeeTo — routing 1/6 of the 0.1% swap fee to ${getAddress(feeTo)}`);
+      const tx = await factory.contract.setFeeTo(getAddress(feeTo), overrides);
+      console.log(`  tx    : ${tx.hash}`);
+      await tx.wait();
+      const onchainFeeTo = await factory.contract.feeTo();
+      const feeOk = getAddress(onchainFeeTo) === getAddress(feeTo);
+      feeToStatus = feeOk ? 'ON' : 'MISMATCH';
+      console.log(`  factory.feeTo() -> ${onchainFeeTo}`);
+      console.log(feeOk ? '  protocol fee ON ✅' : '  MISMATCH ❌');
+    }
+  }
+
   // --- record ------------------------------------------------------------
   const record = {
     network: netName,
     chainId: net.chainId,
     deployer: wallet.address,
     feeToSetter,
+    feeTo: feeTo ? getAddress(feeTo) : null,
+    feeToStatus,
     WETH: wethAddress,
     wethMode,
     UniswapV2Factory: factory.address,
@@ -128,6 +160,7 @@ async function main() {
   console.log(` saved   : ${path.relative(process.cwd(), outFile)}`);
   console.log(` Factory : ${net.explorer}/address/${factory.address}`);
   console.log(` Router  : ${net.explorer}/address/${router.address}`);
+  console.log(` feeTo   : ${feeTo ? getAddress(feeTo) + '  [' + feeToStatus + ']' : 'OFF'}`);
   console.log('════════════════════════════════════════════════════════');
 }
 

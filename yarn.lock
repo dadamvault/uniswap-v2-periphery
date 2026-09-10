@@ -332,7 +332,7 @@
   resolved "https://registry.yarnpkg.com/@uniswap/lib/-/lib-4.0.1-alpha.tgz#2881008e55f075344675b3bca93f020b028fbd02"
   integrity sha512-f6UIliwBbRsgVLxIaBANF6w09tYqc6Y/qXdsrbEmXHyFA7ILiKrIwRFXe1yOg8M3cksgVsO9N7yuL2DdCGQKBA==
 
-"@uniswap/v2-core@file:../Uniswap-v2-core":
+"@uniswap/v2-core@file:../uniswap-v2-core":
   version "1.0.1"
 
 "@yarnpkg/lockfile@^1.1.0":

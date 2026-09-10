@@ -1,0 +1,15 @@
+{
+  "network": "mainnet",
+  "chainId": 8217,
+  "deployer": "0x2838595f791816358C786E630e03f78330828d12",
+  "feeToSetter": "0x2838595f791816358C786E630e03f78330828d12",
+  "feeTo": "0x2838595f791816358C786E630e03f78330828d12",
+  "feeToStatus": "ON",
+  "WETH": "0x19Aac5f612f524B754CA7e7c41cbFa2E981A4432",
+  "wethMode": "canonical",
+  "UniswapV2Factory": "0x871B0c231570555C3706A946DC8d5882d2E31C82",
+  "UniswapV2Router02": "0xf841748B86CaB9762f96BF8d8Fd732752157d9fC",
+  "initCodeHash": "0xc97db88951ee829399b28cfec1e341f9601344c1fa8e4a9cba1c16f71b92c40a",
+  "rpc": "https://public-en.node.kaia.io",
+  "timestamp": "2026-09-10T12:46:35.603Z"
+}

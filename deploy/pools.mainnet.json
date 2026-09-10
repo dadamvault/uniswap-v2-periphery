@@ -1,0 +1,13 @@
+[
+  {
+    "pair": "0xC7B51165616C308C5BD968C9c796fE0EbE327E0f",
+    "tokenA": "KAIA",
+    "tokenB": "USD₮",
+    "tokenBAddress": "0xd077A400968890Eacc75cdc901F0356c943e4fDb",
+    "tokenBDecimals": 6,
+    "seededKAIA": "50",
+    "seededToken": "1.449",
+    "tx": "0xa2055c130407103551c9516fcae914a1d69624a3de1aa56303dc01212a54a899",
+    "timestamp": "2026-09-10T13:09:56.061Z"
+  }
+]

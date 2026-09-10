@@ -16,7 +16,7 @@
   ],
   "dependencies": {
     "@uniswap/lib": "4.0.1-alpha",
-    "@uniswap/v2-core": "file:../Uniswap-v2-core"
+    "@uniswap/v2-core": "file:../uniswap-v2-core"
   },
   "devDependencies": {
     "@types/chai": "^4.2.6",

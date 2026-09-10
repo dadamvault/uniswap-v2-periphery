@@ -39,7 +39,7 @@ function assertMatch() {
       `  hardcoded in library     : ${inLib}\n\n` +
       'Fix: set the literal in contracts/libraries/UniswapV2Library.sol to\n' +
       `  hex'${computed}' // init code hash\n` +
-      'then re-run `yarn compile` in Uniswap-v2-periphery and redeploy.'
+      'then re-run `yarn compile` in uniswap-v2-periphery and redeploy.'
     );
   }
   return computed;

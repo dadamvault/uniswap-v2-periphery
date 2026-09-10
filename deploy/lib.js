@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Build-artifact directories produced by `yarn compile` (ethereum-waffle).
-const CORE_BUILD = path.resolve(__dirname, '../../Uniswap-v2-core/build');
+const CORE_BUILD = path.resolve(__dirname, '../../uniswap-v2-core/build');
 const PERI_BUILD = path.resolve(__dirname, '../build');
 const LIBRARY_SOL = path.resolve(__dirname, '../contracts/libraries/UniswapV2Library.sol');
 

@@ -6,6 +6,7 @@
   "scripts": {
     "verify:hash": "node verify-init-code-hash.js",
     "deploy": "node deploy.js",
+    "add-liquidity": "node add-liquidity.js",
     "smoke": "node smoke-test.js"
   },
   "dependencies": {
