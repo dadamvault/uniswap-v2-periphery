@@ -24,7 +24,8 @@ const getAmountOut = (amountIn, reserveIn, reserveOut, feeNum) => {
 };
 
 async function main() {
-  const netName = (process.env.NETWORK || 'kairos').trim();
+  const netName = (process.env.NETWORK || '').trim();
+  if (!netName) throw new Error(`set NETWORK (one of: ${Object.keys(NETWORKS).join(' | ')}) — every network here is a real mainnet`);
   const net = NETWORKS[netName];
   if (!net) throw new Error(`unknown NETWORK "${netName}"`);
 

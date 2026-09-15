@@ -1,5 +1,5 @@
 {
-  "network": "mainnet",
+  "network": "kaia",
   "chainId": 8217,
   "deployer": "0x2838595f791816358C786E630e03f78330828d12",
   "feeToSetter": "0x2838595f791816358C786E630e03f78330828d12",

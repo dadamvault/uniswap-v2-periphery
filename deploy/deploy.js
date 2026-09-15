@@ -1,5 +1,6 @@
 'use strict';
-// Deploy the fee-modified Uniswap V2 stack to Kaia.
+// Deploy the fee-modified Uniswap V2 stack to any configured mainnet
+// (Kaia, BNB Chain, Base, Polygon, Arbitrum — see NETWORKS in lib.js).
 //
 //   UniswapV2Factory(feeToSetter)          <- uniswap-v2-core/build
 //   UniswapV2Router02(factory, WETH)       <- uniswap-v2-periphery/build
@@ -26,7 +27,8 @@ const { assertMatch } = require('./verify-init-code-hash');
 
 async function main() {
   // --- config ------------------------------------------------------------
-  const netName = (process.env.NETWORK || 'kairos').trim();
+  const netName = (process.env.NETWORK || '').trim();
+  if (!netName) throw new Error(`set NETWORK in .env (one of: ${Object.keys(NETWORKS).join(' | ')}) — every one is a real mainnet, so this is never implied`);
   const net = NETWORKS[netName];
   if (!net) throw new Error(`unknown NETWORK "${netName}" (expected: ${Object.keys(NETWORKS).join(' | ')})`);
 
@@ -49,10 +51,10 @@ async function main() {
   const feeTo = (process.env.FEE_TO || '').trim();
   if (feeTo && !isAddress(feeTo)) throw new Error(`FEE_TO is not an address: ${feeTo}`);
 
-  // resolve WETH
+  // resolve WETH (the Router's constructor name for "wrapped native coin")
   const wethCfg = (process.env.WETH_ADDRESS || '').trim();
   let wethMode = 'canonical';
-  let wethAddress = net.wkaia;
+  let wethAddress = net.wnative;
   if (wethCfg.toLowerCase() === 'deploy') {
     wethMode = 'deploy';
     wethAddress = null;
@@ -70,15 +72,17 @@ async function main() {
   console.log(` network       : ${netName} (chainId ${net.chainId})`);
   console.log(` rpc           : ${rpc}`);
   console.log(` deployer      : ${wallet.address}`);
-  console.log(` balance       : ${formatEther(bal)} KAIA`);
+  console.log(` balance       : ${formatEther(bal)} ${net.nativeSymbol}`);
   console.log(` gasPrice      : ${overrides.gasPrice ? formatUnits(overrides.gasPrice, 'gwei') + ' gwei' : 'node default'}`);
   console.log(` feeToSetter   : ${feeToSetter}`);
   console.log(` feeTo (dev)   : ${feeTo ? getAddress(feeTo) : '(unset — protocol fee stays OFF)'}`);
-  console.log(` WETH (WKAIA)  : ${wethMode === 'deploy' ? '(deploy bundled WETH9)' : wethAddress + '  [' + wethMode + ']'}`);
+  console.log(` WETH (wrapped native) : ${wethMode === 'deploy' ? '(deploy bundled WETH9)' : wethAddress + '  [' + wethMode + ']'}`);
   console.log(` initCodeHash  : 0x${initHash}  ✅ matches UniswapV2Library.sol`);
   console.log('────────────────────────────────────────────────────────');
 
-  if (bal === 0n) throw new Error(`deployer ${wallet.address} has 0 KAIA — fund it first (testnet: https://faucet.kaia.io)`);
+  if (bal === 0n) {
+    throw new Error(`deployer ${wallet.address} has 0 ${net.nativeSymbol} — fund it first`);
+  }
 
   const deployed = async (label, artifact, args) => {
     const f = new ContractFactory(artifact.abi, artifact.bytecode, wallet);

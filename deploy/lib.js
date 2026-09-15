@@ -7,18 +7,44 @@ const CORE_BUILD = path.resolve(__dirname, '../../uniswap-v2-core/build');
 const PERI_BUILD = path.resolve(__dirname, '../build');
 const LIBRARY_SOL = path.resolve(__dirname, '../contracts/libraries/UniswapV2Library.sol');
 
+// `wnative` = canonical wrapped-native-coin address on that chain (passed as the
+// Router's WETH constructor arg). Verified on-chain (name/symbol/decimals) 2026-09-14.
+// Mainnet only — no testnets.
 const NETWORKS = {
-  kairos: {
-    chainId: 1001,
-    rpc: 'https://public-en-kairos.node.kaia.io',
-    wkaia: '0x043c471bEe060e00A56CcD02c0Ca286808a5A436',
-    explorer: 'https://kairos.kaiascan.io',
-  },
-  mainnet: {
+  kaia: {
     chainId: 8217,
     rpc: 'https://public-en.node.kaia.io',
-    wkaia: '0x19Aac5f612f524B754CA7e7c41cbFa2E981A4432',
+    wnative: '0x19Aac5f612f524B754CA7e7c41cbFa2E981A4432',
+    nativeSymbol: 'KAIA',
     explorer: 'https://kaiascan.io',
+  },
+  bnb: {
+    chainId: 56,
+    rpc: 'https://bsc-dataseed.binance.org',
+    wnative: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+    nativeSymbol: 'BNB',
+    explorer: 'https://bscscan.com',
+  },
+  base: {
+    chainId: 8453,
+    rpc: 'https://mainnet.base.org',
+    wnative: '0x4200000000000000000000000000000000000006',
+    nativeSymbol: 'ETH',
+    explorer: 'https://basescan.org',
+  },
+  polygon: {
+    chainId: 137,
+    rpc: 'https://polygon-bor-rpc.publicnode.com',
+    wnative: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
+    nativeSymbol: 'POL',
+    explorer: 'https://polygonscan.com',
+  },
+  arbitrum: {
+    chainId: 42161,
+    rpc: 'https://arb1.arbitrum.io/rpc',
+    wnative: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
+    nativeSymbol: 'ETH',
+    explorer: 'https://arbiscan.io',
   },
 };
 
