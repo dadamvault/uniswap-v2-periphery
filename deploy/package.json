@@ -4,6 +4,7 @@
   "private": true,
   "description": "Deploy the fee-modified Uniswap V2 (core + periphery) to Kaia",
   "scripts": {
+    "create-keystore": "node create-keystore.js",
     "verify:hash": "node verify-init-code-hash.js",
     "deploy": "node deploy.js",
     "add-liquidity": "node add-liquidity.js",

@@ -18,10 +18,11 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const {
-  JsonRpcProvider, Wallet, Contract, MaxUint256,
+  JsonRpcProvider, Contract, MaxUint256,
   isAddress, getAddress, parseUnits, formatUnits, formatEther,
 } = require('ethers');
 const { NETWORKS } = require('./lib');
+const { getWallet } = require('./wallet');
 
 const ERC20_ABI = [
   'function name() view returns (string)',
@@ -55,9 +56,6 @@ async function main() {
   const net = NETWORKS[netName];
   if (!net) throw new Error(`unknown NETWORK "${netName}" (expected: ${Object.keys(NETWORKS).join(' | ')})`);
 
-  const pk = (process.env.PRIVATE_KEY || '').trim();
-  if (!/^0x[0-9a-fA-F]{64}$/.test(pk)) throw new Error('PRIVATE_KEY missing or malformed in .env');
-
   const tokenAddr = getAddress(req('TOKEN'));
   // AMOUNT_KAIA kept as a fallback alias for existing Kaia scripts/muscle memory.
   const amountNativeHuman = (process.env.AMOUNT_NATIVE || process.env.AMOUNT_KAIA || '').trim();
@@ -72,7 +70,7 @@ async function main() {
   const routerAddr = getAddress(rec.UniswapV2Router02);
 
   const provider = new JsonRpcProvider(rpc, { chainId: net.chainId, name: netName }, { staticNetwork: true });
-  const wallet = new Wallet(pk, provider);
+  const wallet = await getWallet(provider); // PRIVATE_KEY in .env, or an encrypted keystore
 
   const router = new Contract(routerAddr, ROUTER_ABI, wallet);
   const factoryAddr = getAddress(await router.factory());

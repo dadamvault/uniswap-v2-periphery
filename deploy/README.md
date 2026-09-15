@@ -32,11 +32,35 @@ cd ../../uniswap-v2-periphery && yarn && yarn compile
 # 2. install this deployer
 cd deploy
 npm install
-cp .env.example .env      # then edit PRIVATE_KEY etc.
+cp .env.example .env      # then edit NETWORK, FEE_TO_SETTER, etc.
+
+# 3. signer
+npm run create-keystore
 ```
 
 Fund the deployer address with the target chain's native coin — every network
 here is mainnet, so there's no faucet.
+
+### Signing — encrypted keystore only, nothing in `.env`
+
+There is no `PRIVATE_KEY` field anywhere in this repo's config, on purpose.
+`npm run create-keystore` writes an encrypted `keystore.json` (gitignored) and
+prints the address to fund. Every script (`deploy`, `add-liquidity`, `smoke`)
+uses it automatically, prompting for the password at the terminal each run
+(masked, never written anywhere — not `.env`, not disk, not an env var). The
+private key itself is never displayed either way:
+
+- `npm run create-keystore` (default) generates a **brand-new** random key
+  in memory and encrypts it straight to disk — nothing to type, nothing to
+  leak via scrollback/clipboard. Use this for a new deployer/feeToSetter.
+- `npm run create-keystore -- --import` encrypts a key you already hold and
+  paste in at the masked prompt — for migrating an existing deployer. Do
+  this only if that key hasn't already been exposed elsewhere (an old
+  `.env`, editor local-history, a backup...); a keystore protects it going
+  forward, it doesn't undo a past leak — rotate instead if in doubt.
+
+There's no separate plaintext backup: the keystore + password **is** the
+backup. Losing the password loses the key, by design.
 
 ## Steps
 
@@ -81,19 +105,21 @@ NETWORK=bnb TOKEN=0x... AMOUNT_NATIVE=2 AMOUNT_TOKEN=600 npm run add-liquidity
 | `AMOUNT_NATIVE` / `AMOUNT_TOKEN` | human-unit amounts; their ratio = initial price (`AMOUNT_KAIA` still works as an alias) |
 | `SLIPPAGE_BPS` | min-amount tolerance, default `100` (1%); only bites on an existing pair |
 
-Appends the result to `pools.<network>.json`. `PRIVATE_KEY` is the LP provider
-and must hold the native coin + token on that chain.
+Appends the result to `pools.<network>.json`. The keystore's address is the LP
+provider and must hold the native coin + token on that chain.
 
 ## .env
 
 | var | meaning |
 |---|---|
 | `NETWORK` | `kaia` \| `bnb` \| `base` \| `polygon` \| `arbitrum` — see table above. Required, no default |
-| `PRIVATE_KEY` | deployer EOA, 0x + 64 hex, funded with that chain's native coin |
 | `FEE_TO_SETTER` | can call `factory.setFeeTo` / `setFeeToSetter`; blank = deployer. Permanent control of the developer fee — use a secure key / multisig |
 | `FEE_TO` | developer-fee recipient. When set, deploy calls `factory.setFeeTo(FEE_TO)`. Blank = fee stays OFF |
 | `WETH_ADDRESS` | blank = canonical wrapped-native address for the network; `deploy` = deploy bundled `WETH9`; `0x…` = explicit |
 | `RPC_URL` | optional override of the public endpoint |
+| `KEYSTORE_PATH` | encrypted keystore file, default `./keystore.json` |
+
+No `PRIVATE_KEY` or password field — see "Signing" above.
 
 ## Developer fee (Uniswap V2 protocol fee)
 

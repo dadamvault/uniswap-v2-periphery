@@ -1,0 +1,15 @@
+{
+  "network": "polygon",
+  "chainId": 137,
+  "deployer": "0x2838595f791816358C786E630e03f78330828d12",
+  "feeToSetter": "0x2838595f791816358C786E630e03f78330828d12",
+  "feeTo": "0x2838595f791816358C786E630e03f78330828d12",
+  "feeToStatus": "ON",
+  "WETH": "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+  "wethMode": "canonical",
+  "UniswapV2Factory": "0x23c52a8f4f63b039C8c4C57BB9901C8CEF1A662B",
+  "UniswapV2Router02": "0xfeb3e54574fD33CB7EfC07D9BfC9BafC90531E2e",
+  "initCodeHash": "0xc97db88951ee829399b28cfec1e341f9601344c1fa8e4a9cba1c16f71b92c40a",
+  "rpc": "https://polygon-bor-rpc.publicnode.com",
+  "timestamp": "2026-09-15T13:27:25.641Z"
+}

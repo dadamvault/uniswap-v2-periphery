@@ -19,11 +19,12 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const {
-  JsonRpcProvider, Wallet, ContractFactory, isAddress, getAddress,
+  JsonRpcProvider, ContractFactory, isAddress, getAddress,
   formatEther, formatUnits,
 } = require('ethers');
 const { NETWORKS, coreArtifact, peripheryArtifact } = require('./lib');
 const { assertMatch } = require('./verify-init-code-hash');
+const { getWallet } = require('./wallet');
 
 async function main() {
   // --- config ------------------------------------------------------------
@@ -32,9 +33,6 @@ async function main() {
   const net = NETWORKS[netName];
   if (!net) throw new Error(`unknown NETWORK "${netName}" (expected: ${Object.keys(NETWORKS).join(' | ')})`);
 
-  const pk = (process.env.PRIVATE_KEY || '').trim();
-  if (!/^0x[0-9a-fA-F]{64}$/.test(pk)) throw new Error('PRIVATE_KEY missing or malformed in .env');
-
   const rpc = (process.env.RPC_URL || '').trim() || net.rpc;
 
   // --- safety: init code hash must match before we touch the network ----
@@ -42,7 +40,7 @@ async function main() {
 
   // --- connect ---------------------------------------------------------------
   const provider = new JsonRpcProvider(rpc, { chainId: net.chainId, name: netName }, { staticNetwork: true });
-  const wallet = new Wallet(pk, provider);
+  const wallet = await getWallet(provider); // PRIVATE_KEY in .env, or an encrypted keystore
 
   const feeToSetter = (process.env.FEE_TO_SETTER || '').trim() || wallet.address;
   if (!isAddress(feeToSetter)) throw new Error(`FEE_TO_SETTER is not an address: ${feeToSetter}`);

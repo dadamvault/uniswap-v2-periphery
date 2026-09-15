@@ -13,9 +13,10 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const {
-  JsonRpcProvider, Wallet, Contract, ContractFactory, getAddress, parseUnits, formatUnits,
+  JsonRpcProvider, Contract, ContractFactory, getAddress, parseUnits, formatUnits,
 } = require('ethers');
 const { NETWORKS, coreArtifact, peripheryArtifact } = require('./lib');
+const { getWallet } = require('./wallet');
 
 // local mirror of UniswapV2Library.getAmountOut with a configurable fee bps kept
 const getAmountOut = (amountIn, reserveIn, reserveOut, feeNum) => {
@@ -35,7 +36,7 @@ async function main() {
 
   const rpc = (process.env.RPC_URL || '').trim() || net.rpc;
   const provider = new JsonRpcProvider(rpc, { chainId: net.chainId, name: netName }, { staticNetwork: true });
-  const wallet = new Wallet((process.env.PRIVATE_KEY || '').trim(), provider);
+  const wallet = await getWallet(provider); // PRIVATE_KEY in .env, or an encrypted keystore
   const feeData = await provider.getFeeData();
   const ov = feeData.gasPrice ? { gasPrice: feeData.gasPrice } : {};
 
