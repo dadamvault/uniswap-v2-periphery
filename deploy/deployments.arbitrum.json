@@ -1,0 +1,15 @@
+{
+  "network": "arbitrum",
+  "chainId": 42161,
+  "deployer": "0x2838595f791816358C786E630e03f78330828d12",
+  "feeToSetter": "0x2838595f791816358C786E630e03f78330828d12",
+  "feeTo": "0x2838595f791816358C786E630e03f78330828d12",
+  "feeToStatus": "ON",
+  "WETH": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+  "wethMode": "canonical",
+  "UniswapV2Factory": "0x12d4A7EB24F84Bf365dE8Aa5330d74b2849dfAc0",
+  "UniswapV2Router02": "0x279B3412D26747a0DB0C5aA08336a17FBA422C48",
+  "initCodeHash": "0xc97db88951ee829399b28cfec1e341f9601344c1fa8e4a9cba1c16f71b92c40a",
+  "rpc": "https://arb1.arbitrum.io/rpc",
+  "timestamp": "2026-09-19T08:13:35.705Z"
+}

@@ -1,5 +1,5 @@
 'use strict';
-// Post-deploy sanity check against a live Kaia deployment:
+// Post-deploy sanity check against a live deployment (any NETWORK):
 //   1. deploy two 18-decimal test ERC20s
 //   2. addLiquidity through the Router (this also creates the pair via CREATE2)
 //   3. confirm the pair address the Router computed == the pair the Factory made
@@ -15,7 +15,7 @@ const path = require('path');
 const {
   JsonRpcProvider, Contract, ContractFactory, getAddress, parseUnits, formatUnits,
 } = require('ethers');
-const { NETWORKS, coreArtifact, peripheryArtifact } = require('./lib');
+const { NETWORKS, coreArtifact, peripheryArtifact, feeOverrides } = require('./lib');
 const { getWallet } = require('./wallet');
 
 // local mirror of UniswapV2Library.getAmountOut with a configurable fee bps kept
@@ -36,9 +36,8 @@ async function main() {
 
   const rpc = (process.env.RPC_URL || '').trim() || net.rpc;
   const provider = new JsonRpcProvider(rpc, { chainId: net.chainId, name: netName }, { staticNetwork: true });
-  const wallet = await getWallet(provider); // PRIVATE_KEY in .env, or an encrypted keystore
-  const feeData = await provider.getFeeData();
-  const ov = feeData.gasPrice ? { gasPrice: feeData.gasPrice } : {};
+  const wallet = await getWallet(provider); // encrypted keystore, password prompted
+  const ov = () => feeOverrides(provider); // fresh per tx — see lib.js
 
   console.log(`network ${netName}  router ${rec.UniswapV2Router02}  deployer ${wallet.address}\n`);
 
@@ -53,7 +52,7 @@ async function main() {
   // 1. two test tokens, 1,000,000 each
   const supply = parseUnits('1000000', 18);
   const mk = async (tag) => {
-    const c = await new ContractFactory(erc20.abi, erc20.bytecode, wallet).deploy(supply, ov);
+    const c = await new ContractFactory(erc20.abi, erc20.bytecode, wallet).deploy(supply, await ov());
     await c.waitForDeployment();
     const a = await c.getAddress();
     console.log(`  token ${tag}: ${a}`);
@@ -66,11 +65,11 @@ async function main() {
   // 2. addLiquidity 1000 / 1000
   const amtA = parseUnits('1000', 18);
   const amtB = parseUnits('1000', 18);
-  await (await tA.approve(router.target, amtA, ov)).wait();
-  await (await tB.approve(router.target, amtB, ov)).wait();
+  await (await tA.approve(router.target, amtA, await ov())).wait();
+  await (await tB.approve(router.target, amtB, await ov())).wait();
   const deadline = Math.floor(Date.now() / 1000) + 900;
   console.log('\naddLiquidity...');
-  await (await router.addLiquidity(tA.target, tB.target, amtA, amtB, 0, 0, wallet.address, deadline, ov)).wait();
+  await (await router.addLiquidity(tA.target, tB.target, amtA, amtB, 0, 0, wallet.address, deadline, await ov())).wait();
 
   // 3. pair address check
   const pairAddr = await factory.getPair(tA.target, tB.target);
@@ -97,8 +96,8 @@ async function main() {
   if (quoted === expect997) throw new Error('quote equals the 0.3% formula — fee change did NOT take effect');
 
   const balBefore = await tB.balanceOf(wallet.address);
-  await (await tA.approve(router.target, amtIn, ov)).wait();
-  await (await router.swapExactTokensForTokens(amtIn, 0, [tA.target, tB.target], wallet.address, Math.floor(Date.now() / 1000) + 900, ov)).wait();
+  await (await tA.approve(router.target, amtIn, await ov())).wait();
+  await (await router.swapExactTokensForTokens(amtIn, 0, [tA.target, tB.target], wallet.address, Math.floor(Date.now() / 1000) + 900, await ov())).wait();
   const received = (await tB.balanceOf(wallet.address)) - balBefore;
   console.log(`  actually received   : ${formatUnits(received, 18)}`);
   if (received !== quoted) throw new Error(`received ${received} != quoted ${quoted}`);

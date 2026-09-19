@@ -22,7 +22,7 @@ const {
   JsonRpcProvider, ContractFactory, isAddress, getAddress,
   formatEther, formatUnits,
 } = require('ethers');
-const { NETWORKS, coreArtifact, peripheryArtifact } = require('./lib');
+const { NETWORKS, coreArtifact, peripheryArtifact, feeOverrides } = require('./lib');
 const { assertMatch } = require('./verify-init-code-hash');
 const { getWallet } = require('./wallet');
 
@@ -40,7 +40,7 @@ async function main() {
 
   // --- connect ---------------------------------------------------------------
   const provider = new JsonRpcProvider(rpc, { chainId: net.chainId, name: netName }, { staticNetwork: true });
-  const wallet = await getWallet(provider); // PRIVATE_KEY in .env, or an encrypted keystore
+  const wallet = await getWallet(provider); // encrypted keystore, password prompted
 
   const feeToSetter = (process.env.FEE_TO_SETTER || '').trim() || wallet.address;
   if (!isAddress(feeToSetter)) throw new Error(`FEE_TO_SETTER is not an address: ${feeToSetter}`);
@@ -63,15 +63,15 @@ async function main() {
   }
 
   const bal = await provider.getBalance(wallet.address);
-  const feeData = await provider.getFeeData();
-  const overrides = feeData.gasPrice ? { gasPrice: feeData.gasPrice } : {};
+  const shown = await feeOverrides(provider); // display only — each tx re-fetches its own
 
   console.log('────────────────────────────────────────────────────────');
   console.log(` network       : ${netName} (chainId ${net.chainId})`);
   console.log(` rpc           : ${rpc}`);
   console.log(` deployer      : ${wallet.address}`);
   console.log(` balance       : ${formatEther(bal)} ${net.nativeSymbol}`);
-  console.log(` gasPrice      : ${overrides.gasPrice ? formatUnits(overrides.gasPrice, 'gwei') + ' gwei' : 'node default'}`);
+  const shownFee = shown.maxFeePerGas ?? shown.gasPrice;
+  console.log(` gas fee cap   : ${shownFee ? formatUnits(shownFee, 'gwei') + ' gwei' + (shown.maxFeePerGas ? ' (max; base fee + tip is what is charged)' : '') : 'node default'}`);
   console.log(` feeToSetter   : ${feeToSetter}`);
   console.log(` feeTo (dev)   : ${feeTo ? getAddress(feeTo) : '(unset — protocol fee stays OFF)'}`);
   console.log(` WETH (wrapped native) : ${wethMode === 'deploy' ? '(deploy bundled WETH9)' : wethAddress + '  [' + wethMode + ']'}`);
@@ -84,7 +84,7 @@ async function main() {
 
   const deployed = async (label, artifact, args) => {
     const f = new ContractFactory(artifact.abi, artifact.bytecode, wallet);
-    const c = await f.deploy(...args, overrides);
+    const c = await f.deploy(...args, await feeOverrides(provider));
     const tx = c.deploymentTransaction();
     console.log(`\n${label}`);
     console.log(`  tx    : ${tx.hash}`);
@@ -128,14 +128,26 @@ async function main() {
       console.log(`  From that account run: factory.setFeeTo(${getAddress(feeTo)})`);
     } else {
       console.log(`\nsetFeeTo — routing 1/6 of the 0.1% swap fee to ${getAddress(feeTo)}`);
-      const tx = await factory.contract.setFeeTo(getAddress(feeTo), overrides);
+      const tx = await factory.contract.setFeeTo(getAddress(feeTo), await feeOverrides(provider));
       console.log(`  tx    : ${tx.hash}`);
-      await tx.wait();
-      const onchainFeeTo = await factory.contract.feeTo();
+      const rcpt = await tx.wait();
+      if (rcpt.status !== 1) throw new Error(`setFeeTo tx reverted: ${tx.hash}`);
+
+      // Public RPCs (e.g. mainnet.base.org) load-balance across nodes, so the
+      // read right after the receipt can hit a node that hasn't seen the block
+      // yet and return the OLD value (a false MISMATCH — seen on Base). The tx
+      // already succeeded, so poll a few times before calling it a mismatch.
+      let onchainFeeTo = await factory.contract.feeTo();
+      for (let i = 0; i < 10 && getAddress(onchainFeeTo) !== getAddress(feeTo); i++) {
+        await new Promise((r) => setTimeout(r, 1500));
+        onchainFeeTo = await factory.contract.feeTo();
+      }
       const feeOk = getAddress(onchainFeeTo) === getAddress(feeTo);
       feeToStatus = feeOk ? 'ON' : 'MISMATCH';
       console.log(`  factory.feeTo() -> ${onchainFeeTo}`);
-      console.log(feeOk ? '  protocol fee ON ✅' : '  MISMATCH ❌');
+      console.log(feeOk
+        ? '  protocol fee ON ✅'
+        : `  MISMATCH ❌ (tx succeeded in block ${rcpt.blockNumber} — re-check feeTo() on the explorer before assuming failure)`);
     }
   }
 

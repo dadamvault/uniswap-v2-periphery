@@ -1,0 +1,15 @@
+{
+  "network": "base",
+  "chainId": 8453,
+  "deployer": "0x2838595f791816358C786E630e03f78330828d12",
+  "feeToSetter": "0x2838595f791816358C786E630e03f78330828d12",
+  "feeTo": "0x2838595f791816358C786E630e03f78330828d12",
+  "feeToStatus": "ON",
+  "WETH": "0x4200000000000000000000000000000000000006",
+  "wethMode": "canonical",
+  "UniswapV2Factory": "0x279B3412D26747a0DB0C5aA08336a17FBA422C48",
+  "UniswapV2Router02": "0x41ded1d07E3606De405B920AC6A289FD4CcCB29D",
+  "initCodeHash": "0xc97db88951ee829399b28cfec1e341f9601344c1fa8e4a9cba1c16f71b92c40a",
+  "rpc": "https://mainnet.base.org",
+  "timestamp": "2026-09-19T07:51:32.008Z"
+}

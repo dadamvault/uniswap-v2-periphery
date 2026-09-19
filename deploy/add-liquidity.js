@@ -9,7 +9,7 @@
 // The ratio AMOUNT_NATIVE : AMOUNT_TOKEN sets the pool's starting price — make it
 // match the real market price or arbitrage bots will take the difference.
 //
-//   cd deploy && cp .env.example .env   # fill PRIVATE_KEY etc.
+//   cd deploy && cp .env.example .env   # then `npm run create-keystore`
 //   NETWORK=kaia TOKEN=0x... AMOUNT_NATIVE=1000 AMOUNT_TOKEN=150 npm run add-liquidity
 //
 // Amounts are in human units; token decimals are read on-chain (native coin = 18).
@@ -21,7 +21,7 @@ const {
   JsonRpcProvider, Contract, MaxUint256,
   isAddress, getAddress, parseUnits, formatUnits, formatEther,
 } = require('ethers');
-const { NETWORKS } = require('./lib');
+const { NETWORKS, feeOverrides } = require('./lib');
 const { getWallet } = require('./wallet');
 
 const ERC20_ABI = [
@@ -70,7 +70,7 @@ async function main() {
   const routerAddr = getAddress(rec.UniswapV2Router02);
 
   const provider = new JsonRpcProvider(rpc, { chainId: net.chainId, name: netName }, { staticNetwork: true });
-  const wallet = await getWallet(provider); // PRIVATE_KEY in .env, or an encrypted keystore
+  const wallet = await getWallet(provider); // encrypted keystore, password prompted
 
   const router = new Contract(routerAddr, ROUTER_ABI, wallet);
   const factoryAddr = getAddress(await router.factory());
@@ -94,8 +94,7 @@ async function main() {
   const existingPair = await factory.getPair(wnative, tokenAddr);
   const pairExists = existingPair !== '0x0000000000000000000000000000000000000000';
 
-  const feeData = await provider.getFeeData();
-  const overrides = feeData.gasPrice ? { gasPrice: feeData.gasPrice } : {};
+  const shown = await feeOverrides(provider); // display only — each tx re-fetches its own
 
   const priceTokenPerNative = Number(amountTokenHuman) / Number(amountNativeHuman);
 
@@ -110,7 +109,8 @@ async function main() {
   console.log(` start price  : 1 ${nativeSym} = ${priceTokenPerNative} ${tSym}   (1 ${tSym} = ${(1 / priceTokenPerNative).toFixed(8)} ${nativeSym})`);
   console.log(` min (slip ${Number(slippageBps) / 100}%) : ${formatEther(minNative)} ${nativeSym} / ${formatUnits(minToken, tokenDecimals)} ${tSym}`);
   console.log(` balances     : ${formatEther(nativeBal)} ${nativeSym} / ${formatUnits(tokenBal, tokenDecimals)} ${tSym}`);
-  console.log(` gasPrice     : ${overrides.gasPrice ? formatUnits(overrides.gasPrice, 'gwei') + ' gwei' : 'node default'}`);
+  const shownFee = shown.maxFeePerGas ?? shown.gasPrice;
+  console.log(` gas fee cap  : ${shownFee ? formatUnits(shownFee, 'gwei') + ' gwei' : 'node default'}`);
   console.log('────────────────────────────────────────────────────────');
 
   if (!pairExists) {
@@ -123,7 +123,7 @@ async function main() {
 
   if (allowance < amountToken) {
     console.log(`approve ${tSym} -> router …`);
-    const atx = await token.approve(routerAddr, MaxUint256, overrides);
+    const atx = await token.approve(routerAddr, MaxUint256, await feeOverrides(provider));
     console.log(`  tx    : ${atx.hash}`);
     await atx.wait();
   }
@@ -132,7 +132,7 @@ async function main() {
   console.log('\naddLiquidityETH …');
   const tx = await router.addLiquidityETH(
     tokenAddr, amountToken, minToken, minNative, wallet.address, deadline,
-    { value: amountNative, ...overrides },
+    { value: amountNative, ...(await feeOverrides(provider)) },
   );
   console.log(`  tx    : ${tx.hash}`);
   const rcpt = await tx.wait();

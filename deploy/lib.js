@@ -66,11 +66,29 @@ function loadArtifact(dir, name) {
 const coreArtifact = (name) => loadArtifact(CORE_BUILD, name);
 const peripheryArtifact = (name) => loadArtifact(PERI_BUILD, name);
 
+// Fee overrides for ONE transaction — call it again for every tx, never cache.
+//
+// Don't pin eth_gasPrice as a cap: on chains with a moving base fee it can sit
+// at/below the next block's base fee, and by the second tx it's stale (Arbitrum:
+// "max fee per gas less than block base fee" on the Router deploy right after
+// a successful Factory deploy). ethers' EIP-1559 values give headroom
+// (maxFee = 2 x baseFee + tip); only baseFee + tip is actually charged, the
+// rest is refunded. Chains without EIP-1559 data (BNB) fall back to a fresh
+// legacy gasPrice.
+async function feeOverrides(provider) {
+  const fd = await provider.getFeeData();
+  if (fd.maxFeePerGas != null && fd.maxPriorityFeePerGas != null) {
+    return { maxFeePerGas: fd.maxFeePerGas, maxPriorityFeePerGas: fd.maxPriorityFeePerGas };
+  }
+  return fd.gasPrice ? { gasPrice: fd.gasPrice } : {};
+}
+
 module.exports = {
   CORE_BUILD,
   PERI_BUILD,
   LIBRARY_SOL,
   NETWORKS,
+  feeOverrides,
   loadArtifact,
   coreArtifact,
   peripheryArtifact,
